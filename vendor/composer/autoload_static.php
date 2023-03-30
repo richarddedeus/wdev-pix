@@ -7,6 +7,10 @@ namespace Composer\Autoload;
 class ComposerStaticInit56d8dc86699588341b95a1d358d8c046
 {
     public static $prefixLengthsPsr4 = array (
+        'M' => 
+        array (
+            'Mpdf\\QrCode\\' => 12,
+        ),
         'A' => 
         array (
             'App\\' => 4,
@@ -14,6 +18,10 @@ class ComposerStaticInit56d8dc86699588341b95a1d358d8c046
     );
 
     public static $prefixDirsPsr4 = array (
+        'Mpdf\\QrCode\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/mpdf/qrcode/src',
+        ),
         'App\\' => 
         array (
             0 => __DIR__ . '/../..' . '/app',

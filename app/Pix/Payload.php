@@ -169,6 +169,26 @@ class Payload{
   private function getMerchantAccountInformation(){
     //Domínio do Banco
     $gui = $this->getValue(self::ID_MERCHANT_ACCOUNT_INFORMATION_GUI, 'br.gov.bcb.pix');
+    //Chave pix
+    $key = $this->getValue(self::ID_MERCHANT_ACCOUNT_INFORMATION_KEY, $this->pixKey);
+    //Descrição do pagamento
+    $description = strlen($this->description) ? $this->getValue(self::ID_MERCHANT_ACCOUNT_INFORMATION_DESCRIPTION, $this->description) : '';
+    //valor compelto da conta
+    return $this->getValue(self::ID_MERCHANT_ACCOUNT_INFORMATION,$gui.$key.$description);
+  }
+
+  /**
+   * Método responsável por retornar os valores do campo adicional do pix(TXID)
+   *
+   * @return string
+   */
+  private function getAdditionalDataFieldTemplate(){
+    //TXID
+    $txid = $this->getValue(self::ID_ADDITIONAL_DATA_FIELD_TEMPLATE_TXID, $this->txid);
+
+    //Retorna o valor completo
+    return $this->getValue(self::ID_ADDITIONAL_DATA_FIELD_TEMPLATE, $txid);
+
   }
   
   /**
@@ -178,10 +198,44 @@ class Payload{
    */
   public function getPayLoad() {
     //Cria o payload
-    $payload = $this->getValue(self::ID_PAYLOAD_FORMAT_INDICATOR, '01');
+    $payload = $this->getValue(self::ID_PAYLOAD_FORMAT_INDICATOR, '01').
+               $this->getMerchantAccountInformation().
+               $this->getValue(self::ID_MERCHANT_CATEGORY_CODE, '0000').
+               $this->getValue(self::ID_TRANSACTION_CURRENCY, '986').
+               $this->getValue(self::ID_TRANSACTION_AMOUNT, $this->amount).
+               $this->getValue(self::ID_COUNTRY_CODE, 'BR').
+               $this->getValue(self::ID_MERCHANT_NAME, $this->merchantName).
+               $this->getValue(self::ID_MERCHANT_CITY,$this->merchantCity).
+               $this->getAdditionalDataFieldTemplate();
 
-    return $payload;
+    //Retorna o payload + CRC16
+    return $payload.$this->getCRC16($payload);
   }
 
-  
+  /**
+   * Método responsável por calcular o valor da hash de validação do código pix
+   * @return string
+   */
+  private function getCRC16($payload) {
+    //ADICIONA DADOS GERAIS NO PAYLOAD
+    $payload .= self::ID_CRC16.'04';
+
+    //DADOS DEFINIDOS PELO BACEN
+    $polinomio = 0x1021;
+    $resultado = 0xFFFF;
+
+    //CHECKSUM
+    if (($length = strlen($payload)) > 0) {
+        for ($offset = 0; $offset < $length; $offset++) {
+            $resultado ^= (ord($payload[$offset]) << 8);
+            for ($bitwise = 0; $bitwise < 8; $bitwise++) {
+                if (($resultado <<= 1) & 0x10000) $resultado ^= $polinomio;
+                $resultado &= 0xFFFF;
+            }
+        }
+    }
+
+    //RETORNA CÓDIGO CRC16 DE 4 CARACTERES
+    return self::ID_CRC16.'04'.strtoupper(dechex($resultado));
+}
 }
